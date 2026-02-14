@@ -1,80 +1,44 @@
 
 import streamlit as st
-import joblib
 import pandas as pd
-import numpy as np
+import joblib
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="ML Disease Prediction System",
-    page_icon="🧠",
-    layout="wide"
+st.set_page_config(page_title="Adult Income Predictor", layout="wide")
+
+st.title("💼 Adult Income Classification App")
+st.markdown("Predict whether income exceeds **$50K** using trained ML models.")
+
+model_option = st.selectbox(
+    "Choose Model",
+    ("Logistic Regression", "Decision Tree", "KNN", "Naive Bayes", "Random Forest", "XGBoost")
 )
 
-# ---------------- CUSTOM CSS ----------------
-st.markdown("""
-<style>
-.big-title {
-    font-size:40px !important;
-    font-weight:700;
-    color:#1f4e79;
+model_files = {
+    "Logistic Regression": "model/logistic_regression.pkl",
+    "Decision Tree": "model/decision_tree.pkl",
+    "KNN": "model/knn.pkl",
+    "Naive Bayes": "model/naive_bayes.pkl",
+    "Random Forest": "model/random_forest.pkl",
+    "XGBoost": "model/xgboost.pkl"
 }
-.sub-text {
-    font-size:18px;
-    color:#444444;
-}
-.pred-box {
-    padding:20px;
-    border-radius:10px;
-    background-color:#f0f2f6;
-    border:1px solid #e0e0e0;
-}
-</style>
-""", unsafe_allow_html=True)
 
-# ---------------- HEADER ----------------
-st.markdown('<p class="big-title">🧠 Machine Learning Disease Prediction System</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-text">Professional ML deployment using trained Random Forest model</p>', unsafe_allow_html=True)
+age = st.slider("Age", 18, 70, 30)
+education_num = st.slider("Education Number", 1, 16, 10)
+hours = st.slider("Hours per week", 1, 80, 40)
 
-st.write("---")
-
-# ---------------- LOAD MODEL ----------------
-@st.cache_resource
-def load_model():
-    return joblib.load("model.pkl")
-
-try:
-    model = load_model()
-except:
-    st.error("Model file not found. Please ensure model.pkl is present.")
-    st.stop()
-
-# ---------------- INPUT SECTION ----------------
-st.sidebar.header("📋 Enter Patient Information")
-
-age = st.sidebar.slider("Age", 1, 100, 25)
-bmi = st.sidebar.slider("BMI", 10.0, 50.0, 22.5)
-glucose = st.sidebar.slider("Glucose Level", 50, 200, 100)
-blood_pressure = st.sidebar.slider("Blood Pressure", 50, 180, 80)
-insulin = st.sidebar.slider("Insulin", 0, 500, 80)
-
-input_data = np.array([[age, bmi, glucose, blood_pressure, insulin]])
-
-# ---------------- PREDICTION ----------------
-st.write("### 🔍 Prediction Result")
+input_data = pd.DataFrame({
+    "age": [age],
+    "education-num": [education_num],
+    "hours-per-week": [hours]
+})
 
 if st.button("Predict"):
-    prediction = model.predict(input_data)[0]
-    probability = model.predict_proba(input_data)[0].max()
-
-    st.markdown('<div class="pred-box">', unsafe_allow_html=True)
-
-    if prediction == 1:
-        st.error(f"⚠️ High Risk Detected (Confidence: {probability:.2f})")
-    else:
-        st.success(f"✅ Low Risk Detected (Confidence: {probability:.2f})")
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.write("---")
-st.caption("Developed for Academic Submission | Machine Learning Classification Project")
+    try:
+        model = joblib.load(model_files[model_option])
+        prediction = model.predict(input_data)
+        if prediction[0] == 1:
+            st.success("Income > 50K")
+        else:
+            st.info("Income <= 50K")
+    except:
+        st.error("Model file not found. Please upload trained model files.")
